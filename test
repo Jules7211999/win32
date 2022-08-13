@@ -78,11 +78,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         SendMessage(hwndTab, WM_SETFONT,
             reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), 0);
 
+        //element
         hwndStatic = CreateWindow(WC_STATIC, L"",
             WS_CHILD | WS_VISIBLE | WS_BORDER,
             200, 200, 100, 100,        // Position and dimensions; example only.
             hwndTab, NULL, hInstance,    // g_hInst is the global instance handle
             NULL);
+
         ShowWindow(hwndStatic, TRUE);
         return 0;
     }
@@ -109,4 +111,3 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return DefWindowProc(hwnd, message, wParam, lParam);
 }
-
