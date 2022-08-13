@@ -1,57 +1,112 @@
-#include <windows.h>
+#include <Windows.h>
+#include <commctrl.h>
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 
-
-LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
-
-
-
-
-
-int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR args, int ncmdshow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow)
 {
-	WNDCLASSW wc = { 0 };
+    static TCHAR szAppName[] = TEXT("windows");
+    HWND hwnd;
+    MSG msg;
+    WNDCLASS wndclass;
+    wndclass.style = CS_HREDRAW | CS_VREDRAW;
+    wndclass.lpfnWndProc = WndProc;
+    wndclass.cbClsExtra = 0;
+    wndclass.cbWndExtra = 0;
+    wndclass.hInstance = hInstance;
+    wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wndclass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wndclass.lpszMenuName = NULL;
+    wndclass.lpszClassName = szAppName;
+    if (!RegisterClass(&wndclass))
+    {
+        MessageBox(NULL, TEXT("This program requires Windows NT!"), szAppName, MB_ICONERROR);
+    }
+    hwnd = CreateWindow(szAppName,
+        TEXT("the hello program"),
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        NULL,
+        NULL,
+        hInstance,
+        NULL);
 
-	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hInstance = hInst;
-	wc.lpszClassName = L"firstwindow";
-	wc.lpfnWndProc = WindowProcedure;
+    ShowWindow(hwnd, iCmdShow);
+    UpdateWindow(hwnd);
 
-	if (!RegisterClassW(&wc))
-		return -1;
-
-	CreateWindowW(L"firstwindow", L"my window", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 100, 100, 500,
-		500, NULL, NULL, NULL, NULL);
-
-	MSG msg = {0};
-
-	while (GetMessage(&msg, NULL, NULL, NULL)) {
-
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-
-	}
-
-
-
-	return 0;
+    while (GetMessageW(&msg, NULL, 0, 0))
+    {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+    }
+    return msg.wParam;
 }
 
-LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
+LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	switch (msg) {
-	case WM_COMMAND:
-		break;
-	case WM_CREATE:
-		
-		break;
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
-	default:
-		return DefWindowProcW(hWnd,msg,wp,lp);
-	}
-}
+    static HINSTANCE hInstance;
+    static HWND hwndTab = 0, hwndStatic = 0;
+    TCITEM tie;
+    RECT rcClient;
+    INITCOMMONCONTROLSEX icex;
+    icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    icex.dwICC = ICC_TAB_CLASSES;
+    TCHAR tabLBL1[256];
+    GetClientRect(hwnd, &rcClient);
+    switch (message)
+    {
+    case WM_CREATE:
+    {
+        hInstance = ((LPCREATESTRUCT)lParam)->hInstance;
+        hwndTab = CreateWindow(WC_TABCONTROL, L"",
+            WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE,
+            0, 0, rcClient.right, rcClient.bottom,
+            hwnd, NULL, hInstance, NULL);
 
+        // Add tabs for each day of the week. 
+        tie.mask = TCIF_TEXT | TCIF_IMAGE;
+        tie.iImage = -1;
+        wsprintf(tabLBL1, L"tab1");
+        tie.pszText = tabLBL1;
+        TabCtrl_InsertItem(hwndTab, 0, &tie);
+        wsprintf(tabLBL1, L"tab2");
+        TabCtrl_InsertItem(hwndTab, 1, &tie);
+        SendMessage(hwndTab, WM_SETFONT,
+            reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), 0);
+
+        hwndStatic = CreateWindow(WC_STATIC, L"",
+            WS_CHILD | WS_VISIBLE | WS_BORDER,
+            200, 200, 100, 100,        // Position and dimensions; example only.
+            hwndTab, NULL, hInstance,    // g_hInst is the global instance handle
+            NULL);
+        ShowWindow(hwndStatic, TRUE);
+        return 0;
+    }
+
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    case WM_NOTIFY:
+        if (((LPNMHDR)lParam)->code == TCN_SELCHANGE)
+        {
+            int tabID = TabCtrl_GetCurSel(hwndTab);
+            switch (tabID)
+            {
+            case 0:
+                ShowWindow(hwndStatic, TRUE);
+                break;
+            case 1:
+                ShowWindow(hwndStatic, FALSE);
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    return DefWindowProc(hwnd, message, wParam, lParam);
+}
 
